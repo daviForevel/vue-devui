@@ -33,13 +33,10 @@ export default defineComponent({
             if (offsetHeight && props.onInnerResize) {
               props.onInnerResize();
             }
-          }}
-        >
-          <div style={innerStyle.value}>
-            {ctx.slots.default?.()}
-          </div>
+          }}>
+          <div style={innerStyle.value}>{ctx.slots.default?.()}</div>
         </ResizeObserver>
       </div>
     );
-  }
+  },
 });

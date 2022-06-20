@@ -7,7 +7,7 @@ import type { Dayjs } from 'dayjs';
 import { throttle } from 'lodash';
 
 export default function useCalendarPanel(props: DatePickerProPanelProps, ctx: SetupContext): UseCalendarPanelReturnType {
-  const yearScrollRef = ref<HTMLElement>();
+  const yearScrollRef = ref(null);
   const monthScrollRef = ref<HTMLElement>();
   const yearAndMonthList = ref<YearAndMonthItem[]>([]);
   const allMonthList = ref<YearAndMonthItem[]>([]);
@@ -109,7 +109,7 @@ export default function useCalendarPanel(props: DatePickerProPanelProps, ctx: Se
     }
     nextTick(() => {
       const scrollEl = yearScrollRef.value;
-      scrollEl?.scroll?.(0, scrollHeight);
+      scrollEl?.syncScrollTop(scrollHeight);
     });
   };
 
@@ -120,7 +120,7 @@ export default function useCalendarPanel(props: DatePickerProPanelProps, ctx: Se
     }
     nextTick(() => {
       const scrollEl = monthScrollRef.value;
-      scrollEl?.scroll?.(0, scrollHeight);
+      scrollEl?.syncScrollTop(scrollHeight);
     });
   };
 

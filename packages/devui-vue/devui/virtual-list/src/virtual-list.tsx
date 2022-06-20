@@ -12,7 +12,7 @@ import {
   nextTick,
   watchEffect,
   onBeforeUnmount,
-  unref
+  unref,
 } from 'vue';
 import type { VirtualListProps, RenderFunc, IScrollBarExposeFunction } from './virtual-list-types';
 import { virtualListProps } from './virtual-list-types';
@@ -55,7 +55,7 @@ export default defineComponent({
       () => {
         mergedData.value = toRaw(data.value).slice();
       },
-      { immediate: true },
+      { immediate: true }
     );
     const itemKey = shallowRef<ItemKeyFunction | null>(null);
     watch(
@@ -65,24 +65,23 @@ export default defineComponent({
           itemKey.value = val as unknown as ItemKeyFunction;
         } else {
           if (val) {
-            itemKey.value = item => item?.[val];
+            itemKey.value = (item) => item?.[val];
           }
         }
       },
-      { immediate: true },
+      { immediate: true }
     );
     const componentRef = ref<HTMLDivElement>();
     const fillerInnerRef = ref<HTMLDivElement>();
     const barRef = ref<IScrollBarExposeFunction>();
     const getKey = (item: Record<string, never>) => {
-      if (!itemKey.value || !props.itemKey) { return; }
+      if (!itemKey.value || !props.itemKey) {
+        return;
+      }
       return itemKey.value(item);
     };
 
-    const [setInstance, collectHeight, heights, updatedMark] = useHeights<Record<string, never>>(
-      mergedData,
-      getKey,
-    );
+    const [setInstance, collectHeight, heights, updatedMark] = useHeights<Record<string, never>>(mergedData, getKey);
 
     const calRes = reactive<{
       scrollHeight?: number;
@@ -122,7 +121,7 @@ export default defineComponent({
           });
         }
       },
-      { immediate: true },
+      { immediate: true }
     );
 
     watch(
@@ -137,21 +136,16 @@ export default defineComponent({
           });
         }
       },
-      { immediate: true },
+      { immediate: true }
     );
 
     watch(
-      [
-        inVirtual,
-        isVirtual,
-        () => state.scrollTop,
-        mergedData,
-        updatedMark,
-        () => props.height,
-        offsetHeight,
-      ],
+      [inVirtual, isVirtual, () => state.scrollTop, mergedData, updatedMark, () => props.height, offsetHeight],
       () => {
-        if (!isVirtual.value || !inVirtual.value) { return; }
+        if (!isVirtual.value || !inVirtual.value) {
+          return;
+        }
+
         let itemTop = 0;
         let startIndex: number | undefined;
         let startOffset: number | undefined;
@@ -194,8 +188,9 @@ export default defineComponent({
           end: endIndex,
           offset: startOffset,
         });
+        console.log(calRes);
       },
-      { immediate: true },
+      { immediate: true }
     );
 
     const maxScrollHeight = computed(() => (calRes.scrollHeight || 0) - props.height);
@@ -217,12 +212,14 @@ export default defineComponent({
 
     const syncScrollTop = (newTop: number | ((prev: number) => number)) => {
       let value: number;
+      console.log(newTop);
       if (typeof newTop === 'function') {
         value = newTop(state.scrollTop);
       } else {
         value = newTop;
       }
       const alignedTop = keepInRange(value);
+      console.log(alignedTop);
       if (componentRef.value) {
         componentRef.value.scrollTop = alignedTop;
       }
@@ -231,29 +228,27 @@ export default defineComponent({
 
     const onScrollBar = (newScrollTop: number) => {
       const newTop = newScrollTop;
+      console.log(newTop, 222);
       syncScrollTop(newTop);
     };
 
     const onComponentScroll = (e: UIEvent) => {
       const { scrollTop: newScrollTop } = e.currentTarget as Element;
       if (Math.abs(newScrollTop - state.scrollTop) >= 1) {
-        syncScrollTop(newScrollTop);
+        console.log(newScrollTop, 1111);
+        // syncScrollTop(newScrollTop);
       }
       barRef?.value?.onShowBar?.();
       ctx.emit('scroll', e);
     };
 
-    const [onRawWheel, onFireFoxScroll] = useFrameWheel(
-      isVirtual,
-      isScrollAtTop,
-      isScrollAtBottom,
-      (offsetY: number) => {
-        syncScrollTop(top => {
-          const newTop = top + offsetY;
-          return newTop;
-        });
-      },
-    );
+    const [onRawWheel, onFireFoxScroll] = useFrameWheel(isVirtual, isScrollAtTop, isScrollAtBottom, (offsetY: number) => {
+      syncScrollTop((top) => {
+        const newTop = top + offsetY;
+        console.log(newTop, 333);
+        return newTop;
+      });
+    });
 
     useMobileTouchMove(isVirtual, componentRef, (deltaY, smoothOffset) => {
       if (originScroll(deltaY, !!smoothOffset)) {
@@ -271,11 +266,7 @@ export default defineComponent({
 
     const removeEventListener = () => {
       if (componentRef.value) {
-        componentRef.value.removeEventListener(
-          'wheel',
-          onRawWheel,
-          ({ passive: false } as EventListenerOptions),
-        );
+        componentRef.value.removeEventListener('wheel', onRawWheel, { passive: false } as EventListenerOptions);
         componentRef.value.removeEventListener('DOMMouseScroll', onFireFoxScroll);
         componentRef.value.removeEventListener('MozMousePixelScroll', onMozMousePixelScroll);
       }
@@ -285,11 +276,7 @@ export default defineComponent({
       nextTick(() => {
         if (componentRef.value) {
           removeEventListener();
-          componentRef.value.addEventListener(
-            'wheel',
-            onRawWheel,
-            ({ passive: false } as EventListenerOptions),
-          );
+          componentRef.value.addEventListener('wheel', onRawWheel, { passive: false } as EventListenerOptions);
           componentRef.value.addEventListener('DOMMouseScroll', onFireFoxScroll);
           componentRef.value.addEventListener('MozMousePixelScroll', onMozMousePixelScroll);
         }
@@ -320,18 +307,18 @@ export default defineComponent({
         const renderList = mergedData.value.slice(calRes.start, calRes.end + 1);
         ctx.emit('show-change', renderList, mergedData.value);
       },
-      { flush: 'post' },
+      { flush: 'post' }
     );
+
+    ctx.expose({
+      syncScrollTop,
+    });
 
     return () => {
       const Component = props.component as keyof HTMLAttributes;
       return (
         <div style={{ position: 'relative' }}>
-          <Component
-            style={componentStyle.value as HTMLAttributes['style']}
-            ref={componentRef}
-            onScroll={onComponentScroll}
-          >
+          <Component style={componentStyle.value as HTMLAttributes['style']} ref={componentRef} onScroll={onComponentScroll}>
             <ResizeObserverContainer
               height={calRes.scrollHeight}
               offset={calRes.offset}
@@ -345,7 +332,7 @@ export default defineComponent({
                     calRes.end,
                     setInstance,
                     { getKey },
-                    ctx.slots.item as RenderFunc<unknown>,
+                    ctx.slots.item as RenderFunc<unknown>
                   ),
               }}
             />
@@ -369,5 +356,5 @@ export default defineComponent({
         </div>
       );
     };
-  }
+  },
 });
